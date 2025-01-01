@@ -5,6 +5,8 @@
         <meta charset="UTF-8"/>
     </head>
     <body>
-        <h1>{{.}}</h1>
+        {{ $user := . }}
+        <h1>User: {{$user}}</h1>
+        <p>Age: {{$user}}</p>
     </body>
 </html>

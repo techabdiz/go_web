@@ -7,6 +7,8 @@ import (
 )
 
 type User struct {
+	username string
+	age      int
 }
 
 func main() {
@@ -15,7 +17,10 @@ func main() {
 		log.Fatalln("error while parsing template", err)
 		return
 	}
-	err = tpl.Execute(os.Stdout, 42)
+	err = tpl.Execute(os.Stdout, User{
+		"John Doe",
+		23,
+	})
 
 	if err != nil {
 		log.Fatalln("error while executing template", err)
