@@ -17,9 +17,10 @@ func main() {
 		log.Fatalln("error while parsing template", err)
 		return
 	}
-	err = tpl.Execute(os.Stdout, User{
-		"John Doe",
-		23,
+	err = tpl.Execute(os.Stdout, []string{
+		"Cat",
+		"Dog",
+		"Elephant",
 	})
 
 	if err != nil {
