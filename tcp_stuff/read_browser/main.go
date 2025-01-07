@@ -30,6 +30,7 @@ func handle(con net.Conn) {
 
 	for scanner.Scan() {
 		fmt.Println(scanner.Text())
+		fmt.Fprintln(con, "hey client this message is from the server\r\n")
 	}
 	defer con.Close()
 
