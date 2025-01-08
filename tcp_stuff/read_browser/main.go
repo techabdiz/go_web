@@ -31,9 +31,8 @@ func handle(con net.Conn) {
 	scanner := bufio.NewScanner(con)
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
-		fmt.Fprintf(con, "You said, %s\n", line)
+		fmt.Println(scanner.Text())
+		fmt.Fprintln(con, "hey client this message is from the server\r\n")
 	}
 	defer con.Close()
 
