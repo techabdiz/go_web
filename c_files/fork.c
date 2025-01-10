@@ -63,7 +63,7 @@ void fork_wait_basic(void) {
     if( getpid() == mother_pid ) { 
         printf("parent code %d\n", getpid());
         for ( int i = 0; i < NUM_WORKERS; i ++ ) { 
-            // synchronously waiting for each child termination
+            // synchronously waiting for each child termination, just like channels in go
             int comp = wait(NULL); 
             printf("parent code %d exiting when %d completed\n", getpid(), comp); 
         }
