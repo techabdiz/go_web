@@ -45,7 +45,8 @@ int main () {
         printf("looping... looping... looping... \n");
         close(sock_fd);
     }
-
+    printf("connected to host on pid: %d\n", getpid());
+    while(1);
     const char* tx =
         "GET / HTTP/1.1\r\n"
         "Host: example.com\r\n"
