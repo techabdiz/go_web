@@ -6,10 +6,9 @@
 #include <string.h>
 #include <unistd.h>
 
+extern void print_socket_payload(int sock_fd);
 
-
-int connect_host(const char* host, const char* port) { 
-    int sock_fd = 0; // client socket file descriptor
+void start_server (const char* host, const char* port) { 
     struct addrinfo* addr;
     struct addrinfo hints;
     memset(&hints, 0, sizeof(struct addrinfo));
@@ -21,18 +20,34 @@ int connect_host(const char* host, const char* port) {
         exit(EXIT_FAILURE);
     }
 
-    for (struct addrinfo* next = addr; next ; next = next->ai_next) { 
-        sock_fd = socket(next->ai_family, next->ai_socktype, 0);
-        if(sock_fd < 0) { 
-            perror("socket creation failed");
-            continue;
-        }
-
-        if(connect(sock_fd, next->ai_addr, next->ai_addrlen) == 0) { 
-            printf("connected successfully to %s \n", host);
-            break;
-        } 
+    int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sock_fd < 0 ){ 
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
     }
+
+    printf("socket created successfully... \n");
+
+    int bind_res = bind(sock_fd, addr->ai_addr, addr->ai_addrlen);
+
+    if(bind_res < 0) { 
+        perror("socket bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("bind successful.. \n");
+    
+    int listen_res = listen(sock_fd, 8);
+    if(bind_res < 0) { 
+        perror("socket listen failed");
+        exit(EXIT_FAILURE);
+    }
+    printf("successfully marked socket as listener\n");
+    
+    int new_fd = accept(sock_fd, addr->ai_addr, addr->ai_addrlen);
+    printf("servicing the request\n");
+
+    print_socket_payload(new_fd);
 
     const char* req = "GET /rfc/rfc793.txt HTTP/1.1\r\n\r\n";
     
@@ -42,9 +57,17 @@ int connect_host(const char* host, const char* port) {
         perror("writing to socket failed");
         exit(EXIT_FAILURE);
     }
+    close(new_fd);
+    close(sock_fd);
+}
 
-    printf("Write successful\n");
 
+
+int main () { 
+    start_server("localhost", "8080");
+}
+
+void print_socket_payload(int sock_fd) { 
     int buf_size = 1025;
 
     char buffer[buf_size];
@@ -58,13 +81,4 @@ int connect_host(const char* host, const char* port) {
         }
         printf("%s", buffer);      // Print the server's response
     }
-
-
-    close(sock_fd);
-    freeaddrinfo(addr);
-}
-
-
-int main () { 
-    connect_host("localhost", "8080");
 }
