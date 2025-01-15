@@ -3,11 +3,21 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/wait.h>
+
+typedef struct token { 
+    char * t;
+    struct token* next;
+}token;
+
 
 #define MAX_COMMAND_SIZE 1024
 int get_next_input(char* command) ;
 int execute_command(char* command);
-int split_by_delim (char *command, char delim, char*** result) ;
+token* split_by_delim (char *command, char delim);
+
+extern char **environ;
+extern int token_size(token* ptr);
 
 int main () { 
     printf("ManGo Software INC.\n\n");
@@ -15,7 +25,6 @@ int main () {
     
     while(1) { 
         get_next_input(command);
-        printf("executing: %s\n", command);
 
         if (strcmp("exit", command)  == 0) {
             printf("ok... i see exit\n");
@@ -32,54 +41,82 @@ int main () {
 }
 
 
-int execute_command(char* command) { 
-    
-    int token_count = 1;
-    for ( int i = 0; *(command+i) != '\0' ; i++) { 
-        if(*(command+i) == ' ') { 
-            token_count++;
+token* getpath() { 
+    int i = 0;
+    while(environ[i]) {
+        if(strncmp("PATH", environ[i], 4) == 0) { 
+            char buf[1024];
+            strcpy(buf, environ[i]+5);
+            return split_by_delim(buf, ':');
+            break;
         }
+        i++;
     }
-    char* command_tokens[token_count];
-    command_tokens[0] = command;
-    int issued_tokens = 1;
-
-    if(token_count > 1) {
-        for ( int i = 0; *(command+i) != '\0' ; i++) { 
-            if(*(command+i) == ' ') { 
-                *(command+i) = '\0';
-                command_tokens[issued_tokens++] = command+(i+1);
-            }
-            char** result;
-            int token_count = split_by_delim(command, ' ', &result);
-            for(int i =0; i < token_count-1; i++)  {
-                printf("token: %s\n", (*(result)+i) );
-            }
-        }
-    }
+    return NULL;
 }
 
-int split_by_delim (char *command, char delim, char*** result) { 
-    int token_count = 1;
-    for ( int i = 0; *(command+i) != '\0' ; i++) { 
-        if(*(command+i) == delim) { 
-            token_count++;
-        }
-    }
-    char* command_tokens[token_count];
-    command_tokens[0] = command;
-    int issued_tokens = 1;
 
-    if(token_count > 1) {
-        for ( int i = 0; *(command+i) != '\0' ; i++) { 
-            if(*(command+i) == delim) { 
-                *(command+i) = '\0';
-                command_tokens[issued_tokens++] = command+(i+1);
+int execute_command(char* command) { 
+    token* search_dirs = getpath();
+    token* t = split_by_delim(command, ' ');
+    int arg_size = token_size(t);
+    char* args[arg_size];
+    int index = 0;
+    for(token* c = t; c != NULL; c = c->next) {
+        args[index] = c->t;
+        index++;
+    }
+    int pid = fork();
+    
+
+    if ( pid == 0 ) { 
+        int executed = 0;
+        for(token* c = search_dirs; c != NULL; c = c->next) { 
+            char comm_path[1024];
+            strcpy(comm_path, c->t);
+            strcat(comm_path, "/");
+            strcat(comm_path, t->t);
+            if(execve(comm_path, args, environ) != -1) {
+                executed = 1;
+                break;
             }
         }
+        printf("command %s not found\n", t->t);        
+        exit(EXIT_SUCCESS); // set proper exit status
     }
-    *(result) = command_tokens;
-    return issued_tokens;
+
+    wait(NULL);
+    return 0;
+}
+
+int token_size(token* ptr) { 
+    int size = 0;
+    for(token* c = ptr; c != NULL; c = c->next) { 
+        size++;
+    }
+    return size;
+}
+
+// create function for freeing this linked list
+token* split_by_delim (char *command, char delim) { 
+    token* start = malloc(sizeof(token));
+    token* current = start;
+    current->t = command;
+    for ( int i = 0; *(command+i) != '\0' ; i++) { 
+        if(*(command+i) == delim) { 
+            *(command+i) = '\0';
+            current->next = malloc(sizeof(token));
+            current = current->next;
+            current->t = (command+i)+1;
+        }
+    }
+    for(char* c = current->t; *c != '\0'; c++) {
+        if( * c == '\n' ) { 
+            *c = '\0'; // replacing newline from stdin
+        }
+    }
+    current->next = NULL;
+    return start;
 }
 
 
