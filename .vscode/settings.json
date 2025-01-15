@@ -5,7 +5,9 @@
         "string.h": "c",
         "stdio.h": "c",
         "inet.h": "c",
-        "mman.h": "c"
+        "mman.h": "c",
+        "chrono": "c",
+        "functional": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
