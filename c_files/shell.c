@@ -109,7 +109,7 @@ int execute_command(char* command) {
 
     if ( pid == 0 ) { 
         int executed = 0;
-        for(token* c = search_dirs; c != NULL; c = c->next) { 
+        for(token* c = search_dirs; c != NULL; c = c->next) { // execvp does this automatically from path variable
             char* comm_path = malloc(1024);
             
             if( strncmp(".", t->t, 1) == 0 || strncmp("/", t->t, 1) == 0) { 
@@ -121,7 +121,7 @@ int execute_command(char* command) {
             }
             
             
-            if(execve(comm_path, args, environ) != -1) {
+            if(execve(comm_path, args, environ) != -1) { 
                 executed = 1;
                 break;
             }else { 
@@ -131,7 +131,7 @@ int execute_command(char* command) {
         printf("command %s not found\n", t->t);        
         exit(EXIT_SUCCESS); // set proper exit status
     }
-    wait(NULL);
+    wait(NULL); // will be trouble for bg processes
     free_tokens(t);
     free_tokens(search_dirs);
     goto exit_clean_up_done;
