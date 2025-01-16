@@ -70,11 +70,13 @@ int execute_command(char* command) {
     args[arg_size]=NULL;
     int index = 0;
     for(token* c = t; c != NULL; c = c->next) {
-        if (c->next == NULL)  { 
-            *(c->t+(c->length-1)) = '\0';
+        if (c->t != NULL) {  // i've got a bad feeling about this... should be in extreme sync with token_size
+            if (c->next == NULL)  { 
+                *(c->t+(c->length-1)) = '\0';
+            }
+            args[index] = c->t;
+            index++;
         }
-        args[index] = c->t;
-        index++;
     }
 
     if(*args[0] == '\0') { // if blank command , look for next
@@ -143,7 +145,9 @@ int execute_command(char* command) {
 int token_size(token* ptr) { 
     int size = 0;
     for(token* c = ptr; c != NULL; c = c->next) { 
-        size++;
+        if (c->t != NULL) { 
+           size++;
+        }
     }
     return size;
 }
@@ -182,7 +186,6 @@ void free_tokens(token * tk) {  //freeing a singly linked list
 
 
 int get_next_input(char* command) { 
-
     char cwd[1024];
 
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -197,6 +200,22 @@ int get_next_input(char* command) {
     fprintf(stdout, cwd);
     fprintf(stdout, "]$ ");
     fflush(stdout);
-    int rd_size = read(0, command, MAX_COMMAND_SIZE);
-    return rd_size;
+
+    int total_read = 0;
+    while(1) {
+        char ch  = '\0';
+        int rd_size = read(0, &ch, 1);
+        if(ch == '\t') {
+            // implement backspace
+            printf("\r\b \r\b");
+            fflush(stdout);
+            break;
+        }
+        *(command+total_read) = ch;
+        if(ch == '\n') {
+            break;
+        }
+        total_read++;
+    }
+    return total_read;
 }
