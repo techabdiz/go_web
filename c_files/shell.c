@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 
 typedef struct token { 
+    int length;
     char * t;
     struct token* next;
 }token;
@@ -45,10 +46,9 @@ token* getpath() {
     int i = 0;
     while(environ[i]) {
         if(strncmp("PATH", environ[i], 4) == 0) { 
-            char buf[1024];
+            char* buf = malloc(1024);
             strcpy(buf, environ[i]+5);
             return split_by_delim(buf, ':');
-            break;
         }
         i++;
     }
@@ -60,9 +60,13 @@ int execute_command(char* command) {
     token* search_dirs = getpath();
     token* t = split_by_delim(command, ' ');
     int arg_size = token_size(t);
-    char* args[arg_size];
+    char* args[arg_size+1];
+    args[arg_size]=NULL;
     int index = 0;
     for(token* c = t; c != NULL; c = c->next) {
+        if (c->next == NULL)  { 
+            *(c->t+(c->length-1)) = '\0';
+        }
         args[index] = c->t;
         index++;
     }
@@ -72,14 +76,16 @@ int execute_command(char* command) {
     if ( pid == 0 ) { 
         int executed = 0;
         for(token* c = search_dirs; c != NULL; c = c->next) { 
-            char comm_path[1024];
+            char* comm_path = malloc(1024);
             strcpy(comm_path, c->t);
             strcat(comm_path, "/");
             strcat(comm_path, t->t);
             if(execve(comm_path, args, environ) != -1) {
                 executed = 1;
                 break;
+            }else { 
             }
+            free(comm_path);
         }
         printf("command %s not found\n", t->t);        
         exit(EXIT_SUCCESS); // set proper exit status
@@ -102,19 +108,19 @@ token* split_by_delim (char *command, char delim) {
     token* start = malloc(sizeof(token));
     token* current = start;
     current->t = command;
+    int laslen = 0;
     for ( int i = 0; *(command+i) != '\0' ; i++) { 
+        laslen++;
         if(*(command+i) == delim) { 
             *(command+i) = '\0';
+            current->length = laslen;
             current->next = malloc(sizeof(token));
             current = current->next;
             current->t = (command+i)+1;
+            laslen = 0;
         }
     }
-    for(char* c = current->t; *c != '\0'; c++) {
-        if( * c == '\n' ) { 
-            *c = '\0'; // replacing newline from stdin
-        }
-    }
+    current->length = laslen;
     current->next = NULL;
     return start;
 }
