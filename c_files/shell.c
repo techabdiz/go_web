@@ -19,6 +19,7 @@ token* split_by_delim (char *command, char delim);
 
 extern char **environ;
 extern int token_size(token* ptr);
+extern void free_tokens(token * tk) ;
 
 int main () { 
     printf("ManGo Software INC.\n\n");
@@ -37,24 +38,29 @@ int main () {
     }
 
 
-    free(command);
+    free(command);  
     printf("good bye\n");
 }
 
 
 token* getpath() { 
     int i = 0;
-    while(environ[i]) {
+    char* path = getenv("PATH");
+    if(path != NULL) { 
+        char* buf = malloc(1024);
+        strcpy(buf, path);
+        return split_by_delim(buf, ':');
+    }
+    /*while(environ[i]) {
         if(strncmp("PATH", environ[i], 4) == 0) { 
             char* buf = malloc(1024);
             strcpy(buf, environ[i]+5);
             return split_by_delim(buf, ':');
         }
         i++;
-    }
+    }*/
     return NULL;
 }
-
 
 int execute_command(char* command) { 
     token* search_dirs = getpath();
@@ -70,6 +76,21 @@ int execute_command(char* command) {
         args[index] = c->t;
         index++;
     }
+
+    if(*args[0] == '\0') { // if blank command , look for next
+        return 0;
+    }else if (strcmp(args[0], "exit") == 0)  { 
+        goto exit_clean_up_start;
+        exit(0);
+    }else if (strcmp(args[0], "cd") == 0)  { 
+        if(args[1] != NULL) { 
+            chdir(args[1]);
+        }else { 
+            printf("USAGE: cd <path_name>\n");
+        }
+        return 0;
+    }
+
     int pid = fork();
     
 
@@ -90,8 +111,14 @@ int execute_command(char* command) {
         printf("command %s not found\n", t->t);        
         exit(EXIT_SUCCESS); // set proper exit status
     }
-
     wait(NULL);
+    free_tokens(t);
+    free_tokens(search_dirs);
+    goto exit_clean_up_done;
+    exit_clean_up_start: //cleanup and exit (only done exits on intentionals)
+        free(command);
+        exit(0);
+    exit_clean_up_done:
     return 0;
 }
 
@@ -126,8 +153,31 @@ token* split_by_delim (char *command, char delim) {
 }
 
 
+void free_tokens(token * tk) {  //freeing a singly linked list
+    if(tk == NULL) { 
+        return;
+    }
+    free_tokens(tk->next);
+    free(tk);
+}
+
+
+
 int get_next_input(char* command) { 
-    fprintf(stdout, "shell>");
+
+    char cwd[1024];
+
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    } else {
+        perror("getcwd() error");
+    }
+    fprintf(stdout, "[");
+    fprintf(stdout, getenv("USER"));
+    fprintf(stdout, "@");
+    fprintf(stdout, getenv("LOGNAME"));
+    fprintf(stdout, " ");
+    fprintf(stdout, cwd);
+    fprintf(stdout, "]$ ");
     fflush(stdout);
     int rd_size = read(0, command, MAX_COMMAND_SIZE);
     return rd_size;
