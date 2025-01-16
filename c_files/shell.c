@@ -84,9 +84,20 @@ int execute_command(char* command) {
         exit(0);
     }else if (strcmp(args[0], "cd") == 0)  { 
         if(args[1] != NULL) { 
-            chdir(args[1]);
-        }else { 
-            printf("USAGE: cd <path_name>\n");
+            if(strcmp(args[1], "-") == 0) { 
+                chdir(getenv("OLDPWD")); // this is buggy
+            } else if(strcmp(args[1], "~") == 0) { 
+                chdir(getenv("HOME"));
+            }else if(strncmp(args[1], "~/", 2) == 0) { 
+                char path[1024];
+                strcpy(path, getenv("HOME"));
+                strcat(path, args[1]+1);
+                chdir(path);
+            }else { 
+                chdir(args[1]);
+            }            
+        } else { 
+            chdir(getenv("HOME"));
         }
         return 0;
     }
@@ -98,9 +109,16 @@ int execute_command(char* command) {
         int executed = 0;
         for(token* c = search_dirs; c != NULL; c = c->next) { 
             char* comm_path = malloc(1024);
-            strcpy(comm_path, c->t);
-            strcat(comm_path, "/");
-            strcat(comm_path, t->t);
+            
+            if( strncmp(".", t->t, 1) == 0 || strncmp("/", t->t, 1) == 0) { 
+                strcpy(comm_path, t->t);
+            }else { 
+                strcpy(comm_path, c->t);
+                strcat(comm_path, "/");
+                strcat(comm_path, t->t);
+            }
+            
+            
             if(execve(comm_path, args, environ) != -1) {
                 executed = 1;
                 break;
@@ -169,7 +187,7 @@ int get_next_input(char* command) {
 
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
     } else {
-        perror("getcwd() error");
+        perror("[getcwd() error]");
     }
     fprintf(stdout, "[");
     fprintf(stdout, getenv("USER"));
