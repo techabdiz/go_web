@@ -3,6 +3,13 @@
 
 #define B_MAX 4
 typedef struct Node* node;
+typedef struct Leaf* leaf;
+struct Leaf { 
+    int keys[B_MAX];
+    /// vals[B_MAX] ... for storing actual data value
+    leaf next; // for ISAM (Index Sequential Access Method) ... for range queries
+    int len; // use constraint for deciding the split
+};
 struct Node { 
     /**
      * The reason for having a list of values is, 
