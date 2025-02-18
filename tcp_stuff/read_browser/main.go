@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"time"
 )
 
 func main() {
@@ -27,12 +26,13 @@ func main() {
 }
 
 func handle(con net.Conn) {
-	con.SetDeadline(time.Now().Add(time.Second * 10))
+	//con.SetDeadline(time.Now().Add(time.Second * 10))
 	scanner := bufio.NewScanner(con)
 
 	for scanner.Scan() {
+		ln := scanner.Text()
 		fmt.Println(scanner.Text())
-		fmt.Fprintln(con, "hey client this message is from the server\r\n")
+		fmt.Fprintf(con, "hey client this message is from the server: %s \r\n", ln)
 	}
 	defer con.Close()
 
