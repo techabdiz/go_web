@@ -16,7 +16,7 @@ func main() {
 
 	scanner := bufio.NewScanner(conn)
 
-	if scanner.Scan() {
+	for scanner.Scan() {
 		fmt.Println(scanner.Text())
 	}
 }
